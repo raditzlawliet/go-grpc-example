@@ -5,8 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"raditzlawliet/go-grpc-example/protobuf"
 	"time"
+
+	"github.com/raditzlawliet/go-grpc-example/protobuf"
 
 	"google.golang.org/grpc"
 )

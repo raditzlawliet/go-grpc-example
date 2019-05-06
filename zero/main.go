@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"raditzlawliet/go-grpc-example/protobuf"
+
+	"github.com/raditzlawliet/go-grpc-example/protobuf"
 
 	"google.golang.org/grpc"
 )
