@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package greeter;
+
+option go_package = "./proto;greeter";
+
+service Example {
+}
