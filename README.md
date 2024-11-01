@@ -2,6 +2,14 @@
 
 this repository is example for article <https://medium.com/kanoteknologi/making-friend-communication-client-server-with-golang-and-grpc-ef05438c6f4>
 
+## Version
+
+Last update using
+
+- go 1.23
+- google.golang.org/grpc v1.67.1
+- google.golang.org/protobuf v1.35.1
+
 ## Preview
 
 ![alt text](docs/preview.gif)
