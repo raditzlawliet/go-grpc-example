@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/raditzlawliet/go-grpc-example/greeter"
+	"github.com/raditzlawliet/go-grpc-example/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -29,84 +29,47 @@ func main() {
 	log.Println("Client gRPC!")
 
 	// connect to server
-	client := grpcClient{TargetAddress: *addr}
-	client.Connect()
+	client, err := grpc.NewClient(*addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer client.Close()
 
-	// try to sending message ~
+	greeterClient := proto.NewGreeterClient(client)
 	{
-		r, e := client.SayHello(*name)
-		if e != nil {
-			log.Println("Error GetMessage, ", e.Error())
-		} else {
-			log.Println("Message Receive from Server: ", r.Message)
-		}
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		response, err := greeterClient.SayHello(ctx, &proto.SayHelloRequest{
+			Name: "Radit",
+		})
+		fmt.Println("Greeter/SayHello", response, err)
+		cancel()
 	}
-
-	// try to sending another message ~
 	{
-		r, e := client.SayHelloAgain(*name)
-		if e != nil {
-			log.Println("Error GetMessage, ", e.Error())
-		} else {
-			log.Println("Message Receive from Server: ", r.Message)
-		}
-	}
-}
-
-type grpcClient struct {
-	TargetAddress string
-	Connection    *grpc.ClientConn
-	GreeterClient greeter.GreeterClient
-}
-
-func (c *grpcClient) Connect() {
-	log.Println("Connecting Server in", c.TargetAddress)
-
-	// connect
-	var err error
-	c.Connection, err = grpc.NewClient(c.TargetAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Println(fmt.Sprintf("did not connect: %v", err))
-		log.Println("try to reconnecting after 5s")
-		time.Sleep(5 * time.Second)
-		defer c.Connect()
-		return
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		response, err := greeterClient.SayHelloAgain(ctx, &proto.SayHelloRequest{
+			Name: "Radit",
+		})
+		fmt.Println("Greeter/SayHelloAgain", response, err)
+		cancel()
 	}
 
-	// Creating client service
-	c.GreeterClient = greeter.NewGreeterClient(c.Connection)
-}
-
-func (c *grpcClient) SayHello(name string) (*greeter.SayHelloResponse, error) {
-	// creating context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(1*time.Second))
-	defer cancel()
-
-	// request
-	response, err := c.GreeterClient.SayHello(ctx, &greeter.SayHelloRequest{
-		Name: name,
-	})
-
-	if err != nil {
-		return nil, err
+	storeClient := proto.NewStoreClient(client)
+	{
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		response, err := storeClient.Set(ctx, &proto.SetRequest{
+			Key:   "key-something-1",
+			Value: "some-value",
+		})
+		fmt.Println("Store/Set", response, err)
+		cancel()
+	}
+	{
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		response, err := storeClient.Get(ctx, &proto.GetRequest{
+			Key: "key-something-1",
+		})
+		fmt.Println("Store/Get", response, err)
+		cancel()
 	}
 
-	return response, nil
-}
-
-func (c *grpcClient) SayHelloAgain(name string) (*greeter.SayHelloResponse, error) {
-	// creating context with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(1*time.Second))
-	defer cancel()
-
-	// request
-	response, err := c.GreeterClient.SayHelloAgain(ctx, &greeter.SayHelloRequest{
-		Name: name,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
 }

@@ -7,7 +7,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/raditzlawliet/go-grpc-example/greeter"
+	"github.com/raditzlawliet/go-grpc-example/proto"
 	"google.golang.org/grpc"
 )
 
@@ -19,28 +19,48 @@ func init() {
 	flag.Parse()
 }
 
-type server struct {
-	greeter.UnimplementedGreeterServer
+type greeterServer struct {
+	proto.UnimplementedGreeterServer
 }
 
-func NewGreeterService() *server {
-	return &server{}
-}
-
-func (s *server) SayHello(c context.Context, req *greeter.SayHelloRequest) (*greeter.SayHelloResponse, error) {
-	log.Println("Incoming SayHello from:", req.Name)
-	response := &greeter.SayHelloResponse{
+// SayHello rpc from proto/greeter.proto
+func (s *greeterServer) SayHello(c context.Context, req *proto.SayHelloRequest) (*proto.SayHelloResponse, error) {
+	log.Println("Incoming Greeter/SayHello request with data:", req)
+	response := &proto.SayHelloResponse{
 		Message: fmt.Sprintf("Hello %s! Welcome back!", req.Name),
 	}
 	return response, nil
 }
 
-func (s *server) SayHelloAgain(c context.Context, req *greeter.SayHelloRequest) (*greeter.SayHelloResponse, error) {
-	log.Println("Incoming SayHelloAgain from:", req.Name)
-	response := &greeter.SayHelloResponse{
+// SayHelloAgain rpc from proto/greeter
+func (s *greeterServer) SayHelloAgain(c context.Context, req *proto.SayHelloRequest) (*proto.SayHelloResponse, error) {
+	log.Println("Incoming Greeter/SayHelloAgain request with data:", req)
+	response := &proto.SayHelloResponse{
 		Message: fmt.Sprintf("Hello again %s! Welcome back!", req.Name),
 	}
 	return response, nil
+}
+
+var store = map[string]string{}
+
+type storeServer struct {
+	proto.UnimplementedStoreServer
+}
+
+// Set rpc from proto/store
+func (s *storeServer) Set(c context.Context, req *proto.SetRequest) (*proto.SetResponse, error) {
+	log.Println("Incoming Store/Set request with data:", req)
+	store[req.Key] = req.Value
+	return &proto.SetResponse{}, nil
+}
+
+// Get rpc from proto/store
+func (s *storeServer) Get(c context.Context, req *proto.GetRequest) (*proto.GetResponse, error) {
+	log.Println("Incoming Store/Get request with data:", req)
+	if value, ok := store[req.Key]; ok {
+		return &proto.GetResponse{Value: value}, nil
+	}
+	return &proto.GetResponse{Value: ""}, nil
 }
 
 func main() {
@@ -51,9 +71,11 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	greeterService := NewGreeterService()
+	greeterServer := &greeterServer{}
+	storeServer := &storeServer{}
 
-	greeter.RegisterGreeterServer(grpcServer, greeterService)
+	proto.RegisterGreeterServer(grpcServer, greeterServer)
+	proto.RegisterStoreServer(grpcServer, storeServer)
 
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
